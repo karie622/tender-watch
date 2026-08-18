@@ -67,6 +67,24 @@ body::after {
 .topbar h1 { font-size: 19px; margin: 0; }
 .subtitle { margin: 2px 0 0; font-size: 13px; color: var(--ink-soft); }
 .topbar-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.topbar-deco {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  pointer-events: none;
+}
+.topbar-deco img {
+  max-height: 54px;
+  width: auto;
+  max-width: 100%;
+  opacity: 0.92;
+  filter: drop-shadow(0 2px 5px rgba(190, 24, 93, 0.22));
+}
+@media (max-width: 720px) {
+  .topbar-deco { display: none; }
+}
 .date-picker { display: flex; flex-direction: column; font-size: 12px; color: var(--ink-soft); gap: 4px; }
 .date-picker input {
   border: 1px solid var(--line); border-radius: 10px;
@@ -186,40 +204,6 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
   color: var(--primary-deep);
   font-weight: 600;
   letter-spacing: 0.5px;
-}
-
-/* Deco */
-.deco-card {
-  padding: 10px 18px 14px;
-  text-align: center;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-.deco-sky {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-  max-width: 300px;
-  border-radius: 16px;
-  overflow: hidden;
-}
-.deco-sky::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(252, 231, 243, 0.55), rgba(251, 207, 232, 0.45));
-  border-radius: 16px;
-  z-index: 0;
-}
-.deco-sky img {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  display: block;
-  opacity: 0.96;
-  filter: drop-shadow(0 2px 6px rgba(190, 24, 93, 0.22));
 }
 
 /* Vow */
