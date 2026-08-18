@@ -76,9 +76,10 @@ body::after {
   pointer-events: none;
 }
 .topbar-deco img {
-  max-height: 54px;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  height: auto;
+  max-height: 64px;
+  object-fit: contain;
   opacity: 0.92;
   filter: drop-shadow(0 2px 5px rgba(190, 24, 93, 0.22));
 }
