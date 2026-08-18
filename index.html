@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>温柔的守望</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" role="img" aria-label="温柔的守望"></span>
+      <div>
+        <h1>温柔的守望</h1>
+        <p class="subtitle">观测你的梦境 · 情绪 · 身体 · 灵魂</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <label class="date-picker">
+        <span>观测日期</span>
+        <input type="date" id="recordDate" />
+      </label>
+      <button id="saveBtn" class="btn btn-primary">保存今日记录</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- 左列：记录 + 日记 -->
+    <div class="col-left">
+      <section class="card record-card">
+        <h2 class="card-title"><span class="dot dot-mindset"></span>今日记录</h2>
+
+        <details class="sec" open>
+          <summary>梦境记录</summary>
+          <div class="field">
+            <textarea id="dreamNote" placeholder="昨晚梦到了什么？画面、情绪、醒来还记得的片段……"></textarea>
+          </div>
+        </details>
+
+        <details class="sec" open>
+          <summary>情绪</summary>
+          <div class="field">
+            <label>情绪评分 <span class="hint">1=低落 · 10=愉悦</span></label>
+            <div class="score-row">
+              <input type="range" id="emotionScore" min="1" max="10" value="5" />
+              <output id="emotionScoreOut">5</output>
+            </div>
+          </div>
+          <div class="field">
+            <label>情绪分类 <span class="hint">可多选</span></label>
+            <div class="habits" id="emotionCats"></div>
+          </div>
+          <div class="field">
+            <label>情绪记录 <span class="hint">写下来，看见即疗愈</span></label>
+            <textarea id="emotionText" placeholder="发生了什么？身体的感受、脑海的声音、想对自己说的话……"></textarea>
+          </div>
+          <div class="field">
+            <label>应对方案 <span class="hint">用了哪些，可多选</span></label>
+            <div class="habits" id="emotionSols"></div>
+          </div>
+        </details>
+
+        <details class="sec" open>
+          <summary>身体状态</summary>
+          <div class="field two-col">
+            <div>
+              <label>睡眠时长（小时）</label>
+              <input type="number" id="sleepHours" min="0" max="14" step="0.5" value="7" />
+            </div>
+            <div>
+              <label>身体精力 <span class="hint">1~10</span></label>
+              <div class="score-row">
+                <input type="range" id="energyScore" min="1" max="10" value="5" />
+                <output id="energyScoreOut">5</output>
+              </div>
+            </div>
+          </div>
+          <details class="sec" open>
+            <summary>健康饮食</summary>
+            <div class="field">
+              <label>今日饮食 <span class="hint">可多选</span></label>
+              <div class="habits" id="dietItems"></div>
+            </div>
+          </details>
+          <div class="field">
+            <label>今日功法 <span class="hint">可多选</span></label>
+            <div class="habits" id="bodyPractices"></div>
+          </div>
+          <textarea id="bodyNote" placeholder="身体状态备注：哪里不舒服 / 饮食 / 其他……"></textarea>
+          <div class="field period-row">
+            <label class="period-check"><span>大姨妈开始</span><input type="checkbox" id="periodStart" /></label>
+            <label class="period-check"><span>大姨妈结束</span><input type="checkbox" id="periodEnd" /></label>
+          </div>
+        </details>
+
+      </section>
+
+      <section class="card diary-card">
+        <h2 class="card-title"><span class="dot dot-body"></span>今日灵感</h2>
+        <textarea id="diaryText" class="diary-input" placeholder="今天冒出了什么灵感？一句话、一个念头、一个想做的梦……"></textarea>
+        <div class="diary-history" id="diaryHistory"></div>
+      </section>
+    </div>
+
+    <!-- 右列：吉祥物 + 日历 + 趋势 + 报告 -->
+    <div class="col-right">
+      <section class="card mascot-card">
+        <img src="mascot.png" alt="工作台小伙伴" class="mascot-img" />
+        <p class="mascot-caption">今天也要温柔地照顾自己呀</p>
+      </section>
+
+      <section class="card vow-card">
+        <h2 class="card-title"><span class="dot dot-emotion"></span>灵魂祈愿发心</h2>
+        <div class="vow-box">
+          <p class="vow-text">从今天开始，我对我的灵魂和行为负 100% 的责任。我拒绝所有无意识操纵，包括家庭关系、亲密关系和祖先对我的操纵，不抱怨。拒绝无意识操纵，拿回主动权。</p>
+          <label class="vow-check">
+            <input type="checkbox" id="soulVow" />
+            <span>今日已发心打卡</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card calendar-card">
+        <div class="card-head">
+          <h2 class="card-title"><span class="dot dot-emotion"></span>日历</h2>
+          <div class="cal-nav">
+            <button id="calPrev" class="btn btn-ghost">‹</button>
+            <span id="calLabel" class="cal-label"></span>
+            <button id="calNext" class="btn btn-ghost">›</button>
+          </div>
+        </div>
+        <div class="cal-weekdays">
+          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <p class="cal-tip">点击有记录的日期可回溯查看 / 编辑。</p>
+      </section>
+
+      <section class="card trend-card">
+        <div class="card-head">
+          <h2 class="card-title"><span class="dot dot-emotion"></span>趋势图表</h2>
+          <div class="tabs" id="trendTabs">
+            <button class="tab active" data-metric="emotion">情绪</button>
+            <button class="tab" data-metric="energy">精力</button>
+            <button class="tab" data-metric="sleep">睡眠</button>
+            <button class="tab" data-metric="combo">综合</button>
+          </div>
+        </div>
+        <div class="chart-wrap" id="chartWrap"></div>
+        <p class="chart-empty" id="chartEmpty" hidden>还没有足够的数据，先保存几天记录吧。</p>
+      </section>
+
+      <section class="card report-card">
+        <div class="card-head">
+          <h2 class="card-title"><span class="dot dot-mindset"></span>月度总结报告</h2>
+          <button id="reportBtn" class="btn btn-ghost">生成本月报告</button>
+        </div>
+        <div id="reportBody" class="report-body">
+          <p class="chart-empty" style="padding:18px 0">点击「生成本月报告」，查看该月的数据洞察。</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
