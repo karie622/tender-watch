@@ -245,6 +245,9 @@ function init() {
   $("calPrev").addEventListener("click", () => shiftMonth(-1));
   $("calNext").addEventListener("click", () => shiftMonth(1));
   $("reportBtn").addEventListener("click", generateReport);
+  $("exportBtn").addEventListener("click", exportData);
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; });
   $("trendTabs").querySelectorAll(".tab").forEach((t) => {
     t.addEventListener("click", () => {
       $("trendTabs").querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
@@ -253,4 +256,41 @@ function init() {
   });
   loadDateToForm(currentDate);
 }
+
+/* ---------- 数据备份：导出 / 导入 ---------- */
+function exportData() {
+  const payload = { app: "温柔的守望", version: 1, exportedAt: new Date().toISOString(), records };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `温柔的守望-数据-${todayStr()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast(`已导出 ${Object.keys(records).length} 天记录`);
+}
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      const incoming = data && data.records ? data.records : data;
+      if (typeof incoming !== "object" || incoming === null) throw new Error("格式不对");
+      let count = 0;
+      Object.keys(incoming).forEach((d) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+        records[d] = incoming[d];
+        count++;
+      });
+      if (count === 0) throw new Error("无有效记录");
+      saveRecords(records);
+      loadDateToForm(currentDate);
+      toast(`已导入 ${count} 天记录`);
+    } catch (e) {
+      toast("导入失败：文件格式不正确");
+    }
+  };
+  reader.readAsText(file);
+}
+
 document.addEventListener("DOMContentLoaded", init);

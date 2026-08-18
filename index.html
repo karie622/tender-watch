@@ -159,6 +159,16 @@
           <p class="chart-empty" style="padding:18px 0">点击「生成本月报告」，查看该月的数据洞察。</p>
         </div>
       </section>
+
+      <section class="card backup-card">
+        <h2 class="card-title"><span class="dot dot-body"></span>数据备份 · 多设备共用</h2>
+        <p class="backup-tip">把记录导出成 JSON 文件，在另一台设备打开本工作台「导入」，即可多设备共用同一份数据。导入时以文件为准合并（相同日期以导入文件覆盖，其余日期保留）。</p>
+        <div class="backup-btns">
+          <button id="exportBtn" class="btn btn-primary">⬇ 导出数据</button>
+          <button id="importBtn" class="btn btn-ghost">⬆ 导入数据</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden />
+        </div>
+      </section>
     </div>
   </main>
 
