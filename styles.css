@@ -299,11 +299,12 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 /* Footer */
 .footer-deco {
   text-align: center;
-  padding: 22px 16px 34px;
-  font-size: 15px;
-  letter-spacing: 2px;
+  padding: 18px 16px 18px;
+  font-size: 20px;
+  letter-spacing: 3px;
   color: var(--primary-deep);
-  opacity: 0.75;
+  opacity: 0.8;
+  font-family: "Ma Shan Zheng", "STXingkai", "Xingkai SC", cursive;
 }
 
 /* Mobile optimizations */
@@ -381,7 +382,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 
   .toast { bottom: 72px; font-size: 13.5px; padding: 10px 16px; }
 
-  .footer-deco { padding: 16px 16px 26px; font-size: 13.5px; letter-spacing: 1.5px; }
+  .footer-deco { padding: 14px 16px 14px; font-size: 17px; letter-spacing: 2px; }
 }
 
 @media (max-width: 380px) {
