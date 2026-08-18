@@ -300,17 +300,10 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .footer-deco {
   text-align: center;
   padding: 22px 16px 34px;
-}
-.footer-deco img {
-  max-width: 320px;
-  width: 100%;
-  height: auto;
-  display: block;
-  margin: 0 auto;
-  /* 黑底白字手写图：screen 混合模式让黑色背景透明，仅保留白色文字 */
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 2px 4px rgba(190, 24, 93, 0.25));
-  opacity: 0.92;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--primary-deep);
+  opacity: 0.75;
 }
 
 /* Mobile optimizations */
@@ -388,8 +381,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 
   .toast { bottom: 72px; font-size: 13.5px; padding: 10px 16px; }
 
-  .footer-deco { padding: 16px 16px 26px; }
-  .footer-deco img { max-width: 240px; }
+  .footer-deco { padding: 16px 16px 26px; font-size: 13.5px; letter-spacing: 1.5px; }
 }
 
 @media (max-width: 380px) {

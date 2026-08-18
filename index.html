@@ -28,8 +28,24 @@
   </header>
 
   <main class="layout">
-    <!-- 左列：记录 + 日记 -->
+    <!-- 左列：吉祥物 + 祈愿 + 记录 + 日记 -->
     <div class="col-left">
+      <section class="card mascot-card">
+        <img src="mascot.png" alt="工作台小伙伴" class="mascot-img" />
+        <p class="mascot-caption">今天也要温柔地照顾自己呀</p>
+      </section>
+
+      <section class="card vow-card">
+        <h2 class="card-title"><span class="dot dot-emotion"></span>灵魂祈愿发心</h2>
+        <div class="vow-box">
+          <p class="vow-text">从今天开始，我对我的灵魂和行为负 100% 的责任。我拒绝所有无意识操纵，包括家庭关系、亲密关系和祖先对我的操纵，不抱怨。拒绝无意识操纵，拿回主动权。</p>
+          <label class="vow-check">
+            <input type="checkbox" id="soulVow" />
+            <span>今日已发心打卡</span>
+          </label>
+        </div>
+      </section>
+
       <section class="card record-card">
         <h2 class="card-title"><span class="dot dot-mindset"></span>今日记录</h2>
 
@@ -105,24 +121,8 @@
       </section>
     </div>
 
-    <!-- 右列：吉祥物 + 日历 + 趋势 + 报告 -->
+    <!-- 右列：日历 + 趋势 + 报告 + 备份 -->
     <div class="col-right">
-      <section class="card mascot-card">
-        <img src="mascot.png" alt="工作台小伙伴" class="mascot-img" />
-        <p class="mascot-caption">今天也要温柔地照顾自己呀</p>
-      </section>
-
-      <section class="card vow-card">
-        <h2 class="card-title"><span class="dot dot-emotion"></span>灵魂祈愿发心</h2>
-        <div class="vow-box">
-          <p class="vow-text">从今天开始，我对我的灵魂和行为负 100% 的责任。我拒绝所有无意识操纵，包括家庭关系、亲密关系和祖先对我的操纵，不抱怨。拒绝无意识操纵，拿回主动权。</p>
-          <label class="vow-check">
-            <input type="checkbox" id="soulVow" />
-            <span>今日已发心打卡</span>
-          </label>
-        </div>
-      </section>
-
       <section class="card calendar-card">
         <div class="card-head">
           <h2 class="card-title"><span class="dot dot-emotion"></span>日历</h2>
@@ -175,7 +175,7 @@
     </div>
   </main>
 
-  <footer class="footer-deco"><img src="footer-sky-source.jpg" alt="陪你看粉色天空" /></footer>
+  <footer class="footer-deco">陪你看粉色天空</footer>
 
   <div id="toast" class="toast" hidden></div>
 
