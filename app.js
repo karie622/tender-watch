@@ -99,6 +99,7 @@ function saveCurrent() {
   rec.diet = [...dietState];
   rec.healthHabits = [...healthHabitsState];
   rec.diary = $("diaryText").value.trim();
+  rec._updated = Date.now();
   const hasContent =
     rec.dream.note || rec.emotion.text || rec.emotion.categories.length || rec.emotion.solutions.length ||
     rec.emotion.score !== 5 || rec.body.sleep !== 7 || rec.body.energy !== 5 ||
@@ -109,6 +110,7 @@ function saveCurrent() {
   saveRecords(records);
   toast(hasContent ? `已保存 ${currentDate} 的记录` : `已清空 ${currentDate}（内容为空）`);
   renderChart(); renderDiaryHistory(); renderCalendar();
+  if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
 }
 
 /* ---------- 趋势图（纯 SVG） ---------- */
@@ -254,6 +256,8 @@ function init() {
   $("exportBtn").addEventListener("click", exportData);
   $("importBtn").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; });
+  setupSyncUI();
+  if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
   $("trendTabs").querySelectorAll(".tab").forEach((t) => {
     t.addEventListener("click", () => {
       $("trendTabs").querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
@@ -285,6 +289,7 @@ function importData(file) {
       let count = 0;
       Object.keys(incoming).forEach((d) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+        incoming[d]._updated = incoming[d]._updated || Date.now();
         records[d] = incoming[d];
         count++;
       });
@@ -297,6 +302,118 @@ function importData(file) {
     }
   };
   reader.readAsText(file);
+}
+
+/* ---------- 数据同步：GitHub Gist 中转（无后端，跨设备共用） ---------- */
+const GIST_TOKEN_KEY = "pbm_gist_token";
+const GIST_ID_KEY = "pbm_gist_id";
+const GIST_FN = "tender-watch-data.json";
+let syncing = false;
+
+function getGistToken() { return localStorage.getItem(GIST_TOKEN_KEY) || ""; }
+function setGistToken(t) { t ? localStorage.setItem(GIST_TOKEN_KEY, t) : localStorage.removeItem(GIST_TOKEN_KEY); }
+function getGistId() { return localStorage.getItem(GIST_ID_KEY) || ""; }
+function setGistId(id) { id ? localStorage.setItem(GIST_ID_KEY, id) : localStorage.removeItem(GIST_ID_KEY); }
+
+function syncStatus(msg, kind) {
+  const el = $("syncStatus");
+  el.textContent = msg;
+  el.className = "sync-status" + (kind ? " " + kind : "");
+}
+function ghFetch(url, opts = {}) {
+  opts.headers = Object.assign({ Authorization: "token " + getGistToken(), "Content-Type": "application/json" }, opts.headers || {});
+  return fetch(url, opts);
+}
+function buildPayload() {
+  return JSON.stringify({ app: "温柔的守望", version: 1, syncedAt: new Date().toISOString(), records });
+}
+// 同日期「谁更晚保存谁赢」，避免互相覆盖导致丢数据
+function mergeRecords(local, remote) {
+  const out = Object.assign({}, local);
+  Object.keys(remote || {}).forEach((d) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    const lr = local[d], rr = remote[d];
+    if (!lr) { out[d] = rr; return; }
+    if ((rr._updated || 0) >= (lr._updated || 0)) out[d] = rr;
+  });
+  return out;
+}
+async function pullFromGist() {
+  const id = getGistId();
+  if (!id) return null;
+  const res = await ghFetch("https://api.github.com/gists/" + id);
+  if (!res.ok) throw new Error("拉取失败(" + res.status + ")");
+  const data = await res.json();
+  const file = data.files && data.files[GIST_FN];
+  if (!file || !file.content) return {};
+  const parsed = JSON.parse(file.content);
+  return parsed && parsed.records ? parsed.records : (parsed && typeof parsed === "object" ? parsed : {});
+}
+async function pushToGist() {
+  const content = buildPayload();
+  const id = getGistId();
+  if (id) {
+    const res = await ghFetch("https://api.github.com/gists/" + id, {
+      method: "PATCH",
+      body: JSON.stringify({ files: { [GIST_FN]: { content } } }),
+    });
+    if (!res.ok) throw new Error("上传失败(" + res.status + ")");
+  } else {
+    const res = await ghFetch("https://api.github.com/gists", {
+      method: "POST",
+      body: JSON.stringify({ description: "温柔的守望 · 数据同步", public: false, files: { [GIST_FN]: { content } } }),
+    });
+    if (!res.ok) throw new Error("创建失败(" + res.status + ")");
+    setGistId((await res.json()).id);
+  }
+}
+async function syncNow(silent) {
+  if (syncing) return;
+  const token = getGistToken();
+  if (!token) { syncStatus("请先粘贴并保存 gist 令牌", "err"); return; }
+  syncing = true;
+  const btn = $("syncBtn"); if (btn) btn.disabled = true;
+  if (!silent) syncStatus("同步中…");
+  try {
+    const remote = await pullFromGist();
+    if (remote && Object.keys(remote).length) {
+      records = mergeRecords(records, remote);
+      saveRecords(records);
+      loadDateToForm(currentDate);
+    }
+    await pushToGist();
+    syncStatus("已同步 · 共 " + Object.keys(records).length + " 天（" + new Date().toLocaleString() + "）", "ok");
+  } catch (e) {
+    syncStatus("同步出错：" + e.message, "err");
+  } finally {
+    syncing = false;
+    if (btn) btn.disabled = false;
+  }
+}
+function setupSyncUI() {
+  const tok = getGistToken();
+  if (tok) $("gistToken").value = "已保存（" + tok.slice(0, 4) + "…" + tok.slice(-4) + "）";
+  $("autoSync").checked = localStorage.getItem("pbm_auto_sync") === "1";
+  if (getGistId()) syncStatus("已绑定同步 Gist，可立即同步", "ok");
+
+  $("saveTokenBtn").addEventListener("click", () => {
+    const v = $("gistToken").value.trim();
+    if (!v) { setGistToken(""); syncStatus("已清除令牌", "err"); $("gistToken").value = ""; return; }
+    if (v.startsWith("已保存（")) { syncStatus("令牌已保存", "ok"); return; }
+    setGistToken(v);
+    syncStatus("令牌已保存（仅存本机浏览器）", "ok");
+    $("gistToken").value = "已保存（" + v.slice(0, 4) + "…" + v.slice(-4) + "）";
+  });
+  $("syncBtn").addEventListener("click", () => syncNow(false));
+  $("autoSync").addEventListener("change", (e) => {
+    localStorage.setItem("pbm_auto_sync", e.target.checked ? "1" : "0");
+    if (e.target.checked && getGistToken()) syncNow(true);
+  });
+  $("syncDisconnect").addEventListener("click", () => {
+    setGistToken(""); setGistId("");
+    $("gistToken").value = "";
+    syncStatus("已断开，本地令牌已清除", "err");
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
