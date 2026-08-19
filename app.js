@@ -4,6 +4,7 @@ const EMOTION_CATEGORIES = ["过往情绪", "金钱课题", "环境触发", "身
 const EMOTION_SOLUTIONS = ["跟智者作者对话", "读书", "爱的呼吸", "紫光冥想", "应急手势"];
 const BODY_PRACTICES = ["女丹功法", "爱的呼吸", "枯树盘根", "熊经鸟伸"];
 const DIET_ITEMS = ["洋葱配方", "黑米套餐", "白菜西蓝花配方", "过午不食"];
+const HEALTH_HABITS = ["坐姿", "效率", "主动性"];
 const SOUL_VOW = "从今天开始，我对我的灵魂和行为负 100% 的责任。我拒绝所有无意识操纵，包括家庭关系、亲密关系和祖先对我的操纵，不抱怨。拒绝无意识操纵，拿回主动权。";
 
 const COLORS = { mindset: "#8b5cf6", behavior: "#10b981", emotion: "#f59e0b", body: "#3b82f6", energy: "#3b82f6", sleep: "#0ea5e9", combo: "#4f46e5" };
@@ -26,7 +27,7 @@ let currentMetric = "emotion";
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
 // 多选组的工作态
-let emotionCats = [], emotionSols = [], bodyPractices = [], dietState = [];
+let emotionCats = [], emotionSols = [], bodyPractices = [], dietState = [], healthHabitsState = [];
 
 /* ---------- 多选 chip 渲染 ---------- */
 function renderChipGroup(containerId, items, stateArr) {
@@ -64,11 +65,13 @@ function loadDateToForm(date) {
   $("periodEnd").checked = !!rec.body?.periodEnd;
   $("soulVow").checked = !!rec.soulVow;
   dietState = [...(rec.diet || [])];
+  healthHabitsState = [...(rec.healthHabits || [])];
   $("diaryText").value = rec.diary || "";
   renderChipGroup("emotionCats", EMOTION_CATEGORIES, emotionCats);
   renderChipGroup("emotionSols", EMOTION_SOLUTIONS, emotionSols);
   renderChipGroup("bodyPractices", BODY_PRACTICES, bodyPractices);
   renderChipGroup("dietItems", DIET_ITEMS, dietState);
+  renderChipGroup("healthHabits", HEALTH_HABITS, healthHabitsState);
   renderChart();
   renderDiaryHistory();
   renderCalendar();
@@ -94,12 +97,13 @@ function saveCurrent() {
   };
   rec.soulVow = $("soulVow").checked;
   rec.diet = [...dietState];
+  rec.healthHabits = [...healthHabitsState];
   rec.diary = $("diaryText").value.trim();
   const hasContent =
     rec.dream.note || rec.emotion.text || rec.emotion.categories.length || rec.emotion.solutions.length ||
     rec.emotion.score !== 5 || rec.body.sleep !== 7 || rec.body.energy !== 5 ||
     rec.body.practices.length || rec.body.note || rec.body.periodStart || rec.body.periodEnd ||
-    rec.soulVow || rec.diet.length || rec.diary;
+    rec.soulVow || rec.diet.length || rec.healthHabits.length || rec.diary;
   if (hasContent) records[currentDate] = rec;
   else delete records[currentDate];
   saveRecords(records);
@@ -204,6 +208,7 @@ function generateReport() {
   const solFreq = freqOf(recs, (r) => r.emotion?.solutions);
   const pracFreq = freqOf(recs, (r) => r.body?.practices);
   const dietFreq = freqOf(recs, (r) => r.diet);
+  const habitFreq = freqOf(recs, (r) => r.healthHabits);
   const vowDays = recs.filter(({ r }) => r.soulVow).length;
   const topCat = Object.entries(catFreq).sort((a, b) => b[1] - a[1]).find(([, v]) => v > 0);
   const topPrac = Object.entries(pracFreq).sort((a, b) => b[1] - a[1]).find(([, v]) => v > 0);
@@ -231,6 +236,7 @@ function generateReport() {
     <div class="report-sec"><h4>应对方案使用</h4><div class="report-chips">${chips(solFreq)}</div></div>
     <div class="report-sec"><h4>功法练习</h4><div class="report-chips">${chips(pracFreq)}</div></div>
     <div class="report-sec"><h4>健康饮食</h4><div class="report-chips">${chips(dietFreq)}</div></div>
+    <div class="report-sec"><h4>健康习惯</h4><div class="report-chips">${chips(habitFreq)}</div></div>
     <div class="report-summary">${summary}</div>`;
 }
 
