@@ -323,8 +323,19 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .insp-recent { display: flex; flex-direction: column; gap: 14px; }
 .insp-day { border-left: 3px solid var(--primary); background: rgba(252, 231, 243, 0.35); border-radius: 0 12px 12px 0; padding: 8px 14px; }
 .insp-day-h { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
-.insp-day-item { font-size: 14px; line-height: 1.6; color: var(--ink); white-space: pre-wrap; }
+.insp-day-item { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; font-size: 14px; line-height: 1.6; color: var(--ink); }
 .insp-day-item + .insp-day-item { margin-top: 5px; }
+.insp-txt { flex: 1; min-width: 0; white-space: pre-wrap; }
+.insp-del {
+  flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: #dc2626;
+  font-size: 12px; line-height: 1; padding: 5px 9px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+}
+.insp-del:hover { background: #fef2f2; border-color: #fecaca; }
+
+/* 历史预览弹窗中的灵感逐条删除 */
+.preview-line { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; }
+.preview-line .preview-content { flex: 1; min-width: 0; }
+.preview-line .insp-del-preview { font-size: 12px; padding: 4px 9px; }
 
 /* 历史预览弹窗 */
 .modal-overlay {

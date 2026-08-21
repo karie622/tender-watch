@@ -184,7 +184,7 @@ function addInspiration() {
   input.focus();
 }
 
-// 近三天、按日期汇总显示灵感（含今天）
+// 近三天、按日期汇总显示灵感（含今天），每条带删除按钮
 function renderInspRecent() {
   const box = $("inspRecent");
   const days = Object.keys(records)
@@ -196,9 +196,49 @@ function renderInspRecent() {
     const ins = getInspirations(records[d]);
     const day = document.createElement("div");
     day.className = "insp-day";
-    day.innerHTML = `<div class="insp-day-h">${d}</div>` + ins.map((t) => `<div class="insp-day-item">${escapeHtml(t)}</div>`).join("");
+    const head = document.createElement("div");
+    head.className = "insp-day-h";
+    head.textContent = d;
+    day.appendChild(head);
+    ins.forEach((t, idx) => {
+      const item = document.createElement("div");
+      item.className = "insp-day-item";
+      const txt = document.createElement("span");
+      txt.className = "insp-txt";
+      txt.textContent = t;
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "insp-del";
+      del.textContent = "删除";
+      del.addEventListener("click", () => deleteInspiration(d, idx));
+      item.appendChild(txt);
+      item.appendChild(del);
+      day.appendChild(item);
+    });
     box.appendChild(day);
   });
+}
+
+/* ---------- 删除单条灵感 ---------- */
+function deleteInspiration(date, idx) {
+  const rec = records[date];
+  if (!rec) return;
+  if (Array.isArray(rec.inspirations)) {
+    if (idx < 0 || idx >= rec.inspirations.length) return;
+    rec.inspirations.splice(idx, 1);
+    if (rec.inspirations.length === 0) delete rec.inspirations;
+  } else if (rec.diary && idx === 0) {
+    delete rec.diary;
+  } else {
+    return;
+  }
+  rec._updated = Date.now();
+  saveRecords(records);
+  if (date === currentDate) inspirationState = getInspirations(rec);
+  renderInspRecent();
+  renderCalendar();
+  if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
+  toast("已删除该灵感");
 }
 
 /* ---------- 日历 ---------- */
@@ -291,10 +331,15 @@ function renderPreview(type) {
     } else if (type === "inspiration") {
       const ins = getInspirations(r);
       if (!ins.length) return;
-      html += `<div class="preview-item"><div class="preview-date">${d}</div>` + ins.map((t) => `<div class="preview-content">${escapeHtml(t)}</div>`).join("") + `</div>`;
+      html += `<div class="preview-item"><div class="preview-date">${d}</div>` +
+        ins.map((t, idx) => `<div class="preview-line"><span class="preview-content">${escapeHtml(t)}</span><button type="button" class="insp-del insp-del-preview" data-date="${d}" data-idx="${idx}">删除</button></div>`).join("") +
+        `</div>`;
     }
   });
   body.innerHTML = html || `<p class="preview-empty">还没有${(titles[type] || "").replace("历史", "")}。</p>`;
+  body.querySelectorAll(".insp-del-preview").forEach((b) => {
+    b.addEventListener("click", () => { deleteInspiration(b.dataset.date, +b.dataset.idx); renderPreview("inspiration"); });
+  });
 }
 function openPreview(type) { renderPreview(type); $("previewModal").hidden = false; }
 function closePreview() { $("previewModal").hidden = true; }
