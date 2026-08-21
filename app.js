@@ -1,7 +1,7 @@
 /* ============ 个人行为管理工作台 v2 ============ */
 const STORE_KEY = "pbm_records_v1";
 const EMOTION_CATEGORIES = ["过往情绪", "金钱课题", "环境触发", "身体不适", "他人触发", "评价他人", "自我评价", "工作焦虑", "个人发展焦虑"];
-const EMOTION_SOLUTIONS = ["跟智者作者对话", "读书", "爱的呼吸", "紫光冥想", "静心", "应急手势"];
+const EMOTION_SOLUTIONS = ["跟智者作者对话", "读书", "爱的呼吸", "紫光冥想", "静心", "应急手势", "切断联系"];
 const BODY_PRACTICES = ["女丹功法", "爱的呼吸", "枯树盘根", "熊经鸟伸"];
 const DIET_ITEMS = ["洋葱配方", "黑米套餐", "白菜西蓝花配方", "过午不食"];
 const HEALTH_HABITS = ["坐姿", "效率", "主动性"];
