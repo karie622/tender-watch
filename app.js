@@ -420,10 +420,10 @@ function mergeRecords(local, remote) {
 async function findSyncGist() {
   try {
     const listRes = await ghFetch("https://api.github.com/gists?per_page=100");
-    if (!listRes.ok) return "";
+    if (!listRes.ok) return null;
     const list = await listRes.json();
-    if (!Array.isArray(list)) return "";
-    let best = "", bestCount = -1, bestTime = "";
+    if (!Array.isArray(list)) return null;
+    let best = null, bestCount = -1, bestTime = "";
     for (const g of list) {
       if (!g.files || !g.files[GIST_FN]) continue;
       const detailRes = await ghFetch(g.url);
@@ -440,20 +440,21 @@ async function findSyncGist() {
       const isBetter = count > bestCount || (count === bestCount && synced > bestTime);
       if (isBetter) { best = g.id; bestCount = count; bestTime = synced; }
     }
-    return best;
-  } catch (e) { return ""; }
+    return best ? { id: best, count: bestCount } : null;
+  } catch (e) { return null; }
 }
-// 已有 Gist 且里面有数据就信任它；只有空/无效时才去认领记录数最多的那个，避免电脑困在空 Gist 上
+// 同步前先把本地指向的 Gist 对齐到「记录数最多」的那个：
+// 这样无论电脑之前误建了空 Gist、还是指向旧的残缺 Gist，都会自动切到数据最全的源，不再割裂。
 async function ensureGistId() {
   const current = getGistId();
+  let currentCount = -1;
   if (current) {
-    try {
-      const data = await pullFromGist();
-      if (data && Object.keys(data).length) return; // 当前 Gist 有数据，保持不动
-    } catch (e) {}
+    try { const d = await pullFromGist(); currentCount = d ? Object.keys(d).length : 0; } catch (e) { currentCount = -1; }
   }
-  const found = await findSyncGist();
-  if (found) setGistId(found);
+  const best = await findSyncGist();
+  if (!best) return;
+  if (best.id === current && currentCount === best.count) return; // 已经是最优，不动
+  if (currentCount < best.count) setGistId(best.id);             // 存在更丰富的源就切换过去
 }
 
 async function pullFromGist() {
