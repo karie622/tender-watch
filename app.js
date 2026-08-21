@@ -415,6 +415,30 @@ function mergeRecords(local, remote) {
   });
   return out;
 }
+// 多设备场景：用同一 token 去账号下找已存在的同步 Gist，避免第二台设备新建空 Gist 导致数据割裂
+async function findSyncGist() {
+  try {
+    const res = await ghFetch("https://api.github.com/gists?per_page=100");
+    if (!res.ok) return "";
+    const list = await res.json();
+    if (!Array.isArray(list)) return "";
+    let best = "", bestCount = -1;
+    for (const g of list) {
+      const f = g.files && g.files[GIST_FN];
+      if (!f) continue;
+      let count = 0;
+      try { const p = JSON.parse(f.content); count = p && p.records ? Object.keys(p.records).length : 0; } catch (e) {}
+      if (count > bestCount) { bestCount = count; best = g.id; }
+    }
+    return best;
+  } catch (e) { return ""; }
+}
+// 始终认领「记录数最多」的那个同步 Gist（同 token 同账号下只应有一个真实同步源）
+async function ensureGistId() {
+  const found = await findSyncGist();
+  if (found) setGistId(found);
+}
+
 async function pullFromGist() {
   const id = getGistId();
   if (!id) return null;
@@ -452,6 +476,7 @@ async function syncNow(silent) {
   const btn = $("syncBtn"); if (btn) btn.disabled = true;
   if (!silent) syncStatus("同步中…");
   try {
+    await ensureGistId();
     const remote = await pullFromGist();
     if (remote && Object.keys(remote).length) {
       records = mergeRecords(records, remote);
