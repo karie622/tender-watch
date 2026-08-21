@@ -272,6 +272,20 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .diary-item .meta { font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
 .diary-item .meta b { color: var(--ink); }
 .diary-item .txt { font-size: 14px; white-space: pre-wrap; }
+.diary-item .txt + .txt { margin-top: 4px; }
+
+/* 多条今日灵感 */
+.insp-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.insp-item { display: flex; align-items: flex-start; gap: 8px; }
+.insp-item .insp-text { flex: 1; min-height: 56px; margin-bottom: 0; }
+.insp-del {
+  flex: 0 0 auto; width: 30px; height: 30px; margin-top: 2px;
+  border: 1px solid var(--line); border-radius: 9px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.6); color: var(--ink-soft); font-size: 14px; line-height: 1;
+  transition: .15s;
+}
+.insp-del:hover { background: #ffe4e6; color: #dc2626; border-color: #fecdd3; }
+.insp-add { width: 100%; margin-bottom: 16px; }
 
 /* Report */
 .report-body { font-size: 14px; }

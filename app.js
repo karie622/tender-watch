@@ -27,7 +27,7 @@ let currentMetric = "emotion";
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
 // 多选组的工作态
-let emotionCats = [], emotionSols = [], bodyPractices = [], dietState = [], healthHabitsState = [];
+let emotionCats = [], emotionSols = [], bodyPractices = [], dietState = [], healthHabitsState = [], inspirationState = [];
 
 /* ---------- 多选 chip 渲染 ---------- */
 function renderChipGroup(containerId, items, stateArr) {
@@ -66,7 +66,8 @@ function loadDateToForm(date) {
   $("soulVow").checked = !!rec.soulVow;
   dietState = [...(rec.diet || [])];
   healthHabitsState = [...(rec.healthHabits || [])];
-  $("diaryText").value = rec.diary || "";
+  inspirationState = getInspirations(rec);
+  renderInspList();
   renderChipGroup("emotionCats", EMOTION_CATEGORIES, emotionCats);
   renderChipGroup("emotionSols", EMOTION_SOLUTIONS, emotionSols);
   renderChipGroup("bodyPractices", BODY_PRACTICES, bodyPractices);
@@ -98,13 +99,14 @@ function saveCurrent() {
   rec.soulVow = $("soulVow").checked;
   rec.diet = [...dietState];
   rec.healthHabits = [...healthHabitsState];
-  rec.diary = $("diaryText").value.trim();
+  rec.inspirations = inspirationState.map((s) => s.trim()).filter(Boolean);
+  delete rec.diary;
   rec._updated = Date.now();
   const hasContent =
     rec.dream.note || rec.emotion.text || rec.emotion.categories.length || rec.emotion.solutions.length ||
     rec.emotion.score !== 5 || rec.body.sleep !== 7 || rec.body.energy !== 5 ||
     rec.body.practices.length || rec.body.note || rec.body.periodStart || rec.body.periodEnd ||
-    rec.soulVow || rec.diet.length || rec.healthHabits.length || rec.diary;
+    rec.soulVow || rec.diet.length || rec.healthHabits.length || rec.inspirations.length;
   if (hasContent) records[currentDate] = rec;
   else delete records[currentDate];
   saveRecords(records);
@@ -157,18 +159,50 @@ function renderChart() {
   wrap.innerHTML = svg;
 }
 
-/* ---------- 日记历史 ---------- */
+/* ---------- 灵感：兼容旧 diary 字段 ---------- */
+function getInspirations(rec) {
+  if (Array.isArray(rec.inspirations)) return rec.inspirations.map((s) => String(s).trim()).filter(Boolean);
+  if (rec.diary && rec.diary.trim()) return [rec.diary.trim()];
+  return [];
+}
+function renderInspList() {
+  const box = $("inspList");
+  box.innerHTML = "";
+  // 列表为空时自动给一个空输入框，方便直接开写
+  if (inspirationState.length === 0) inspirationState.push("");
+  inspirationState.forEach((text, idx) => {
+    const row = document.createElement("div");
+    row.className = "insp-item";
+    const ta = document.createElement("textarea");
+    ta.className = "diary-input insp-text";
+    ta.placeholder = "今天冒出了什么灵感？一句话、一个念头、一个想做的梦……";
+    ta.value = text;
+    ta.addEventListener("input", () => { inspirationState[idx] = ta.value; });
+    const del = document.createElement("button");
+    del.className = "insp-del";
+    del.type = "button";
+    del.textContent = "✕";
+    del.title = "删除这条灵感";
+    del.addEventListener("click", () => { inspirationState.splice(idx, 1); renderInspList(); });
+    row.appendChild(ta);
+    row.appendChild(del);
+    box.appendChild(row);
+  });
+}
+
+/* ---------- 灵感历史（跨天） ---------- */
 function renderDiaryHistory() {
   const box = $("diaryHistory");
-  const items = Object.keys(records).filter((d) => records[d].diary && records[d].diary.trim()).sort().reverse().slice(0, 12);
-  if (items.length === 0) { box.innerHTML = `<p class="chart-empty" style="padding:14px 0">还没有日记，写一句今天的感受吧。</p>`; return; }
+  const items = Object.keys(records).filter((d) => getInspirations(records[d]).length).sort().reverse().slice(0, 12);
+  if (items.length === 0) { box.innerHTML = `<p class="chart-empty" style="padding:14px 0">还没有灵感记录，写下今天冒出的念头吧。</p>`; return; }
   box.innerHTML = "";
   items.forEach((d) => {
     const r = records[d];
+    const ins = getInspirations(r);
     const meta = [r.emotion?.score ? `情绪 ${r.emotion.score}` : "", r.body?.energy ? `精力 ${r.body.energy}` : ""].filter(Boolean).join("  ·  ");
     const el = document.createElement("div");
     el.className = "diary-item";
-    el.innerHTML = `<div class="meta"><b>${d}</b><span>${meta}</span></div><div class="txt">${escapeHtml(r.diary)}</div>`;
+    el.innerHTML = `<div class="meta"><b>${d}</b><span>${meta}</span></div>` + ins.map((t) => `<div class="txt">${escapeHtml(t)}</div>`).join("");
     box.appendChild(el);
   });
 }
@@ -256,6 +290,7 @@ function init() {
   $("exportBtn").addEventListener("click", exportData);
   $("importBtn").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; });
+  $("addInspBtn").addEventListener("click", () => { const last = inspirationState[inspirationState.length - 1]; if (last === "" || last === undefined) { const ta = $("inspList").querySelector(".insp-text"); if (ta) ta.focus(); return; } inspirationState.push(""); renderInspList(); const tas = $("inspList").querySelectorAll(".insp-text"); tas[tas.length - 1].focus(); });
   setupSyncUI();
   if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
   $("trendTabs").querySelectorAll(".tab").forEach((t) => {
