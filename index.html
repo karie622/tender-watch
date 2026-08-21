@@ -48,6 +48,16 @@
         </div>
       </section>
 
+      <section class="card preview-card">
+        <h2 class="card-title"><span class="dot dot-emotion"></span>历史回顾</h2>
+        <p class="preview-tip">查看过往日期里保存的内容，点击按钮即可预览全部记录。</p>
+        <div class="preview-btns">
+          <button class="btn btn-ghost" data-preview="dream">梦境记录</button>
+          <button class="btn btn-ghost" data-preview="emotion">情绪记录</button>
+          <button class="btn btn-ghost" data-preview="inspiration">今日灵感</button>
+        </div>
+      </section>
+
       <section class="card record-card">
         <h2 class="card-title"><span class="dot dot-mindset"></span>今日记录</h2>
 
@@ -124,6 +134,7 @@
         <h2 class="card-title"><span class="dot dot-body"></span>今日灵感 <span class="hint">可添加多条</span></h2>
         <div class="insp-list" id="inspList"></div>
         <button id="addInspBtn" class="btn btn-ghost insp-add">＋ 添加一条灵感</button>
+        <div class="insp-today" id="inspToday"></div>
         <div class="diary-history" id="diaryHistory"></div>
       </section>
     </div>
@@ -198,6 +209,16 @@
   </main>
 
   <footer class="footer-deco">陪你看粉色天空</footer>
+
+  <div id="previewModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="previewTitle">历史预览</h3>
+        <button id="previewClose" class="modal-close" type="button" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body" id="previewBody"></div>
+    </div>
+  </div>
 
   <div id="toast" class="toast" hidden></div>
 

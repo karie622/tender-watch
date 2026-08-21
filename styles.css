@@ -180,6 +180,12 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .backup-tip { font-size: 12.5px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 12px; }
 .backup-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 
+/* 历史回顾卡片 */
+.preview-card { border-color: rgba(245, 158, 11, 0.35); }
+.preview-tip { font-size: 12.5px; line-height: 1.6; color: var(--ink-soft); margin: 0 0 12px; }
+.preview-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.preview-btns .btn { width: 100%; text-align: center; padding: 10px 8px; }
+
 /* Mascot */
 .mascot-card {
   padding: 18px 20px 16px;
@@ -321,6 +327,61 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
   .sync-row { gap: 8px; }
 }
 
+/* 今日灵感：当日已保存 */
+.insp-today { margin: 14px 0 18px; }
+.insp-today-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 0 0 8px; }
+.insp-today-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 12px; border-radius: 10px;
+  background: rgba(252, 231, 243, 0.55); border: 1px solid var(--line);
+  font-size: 14px; line-height: 1.55; color: var(--ink);
+}
+.insp-today-item + .insp-today-item { margin-top: 6px; }
+.insp-today-item .idx {
+  flex: 0 0 auto; width: 20px; height: 20px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--primary-soft); color: var(--primary-deep);
+  font-size: 11px; font-weight: 700;
+}
+.insp-today-item .txt { white-space: pre-wrap; }
+
+/* 历史预览弹窗 */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(74, 29, 52, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay[hidden] { display: none; }
+.modal {
+  background: #fffaf7; border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(74, 29, 52, 0.22);
+  width: min(720px, 100%); max-height: min(80vh, 720px);
+  display: flex; flex-direction: column;
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid var(--line);
+}
+.modal-head h3 { margin: 0; font-size: 16px; color: var(--ink); }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.7); color: var(--ink-soft); cursor: pointer; font-size: 14px;
+}
+.modal-close:hover { background: #ffe4e6; color: #dc2626; border-color: #fecdd3; }
+.modal-body {
+  padding: 16px 20px 20px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.preview-item {
+  background: rgba(255, 255, 255, 0.78); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+}
+.preview-date { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px; display: flex; gap: 10px; flex-wrap: wrap; }
+.preview-meta { font-weight: 400; color: var(--ink-soft); font-size: 12px; }
+.preview-content { font-size: 14px; line-height: 1.6; color: var(--ink); white-space: pre-wrap; }
+.preview-content + .preview-content { margin-top: 6px; }
+.preview-empty { text-align: center; color: var(--ink-soft); padding: 24px 0; font-size: 14px; }
+
 /* Toast */
 .toast {
   position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
@@ -412,6 +473,13 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 
   .backup-btns { gap: 8px; }
   .backup-card .btn { flex: 1; }
+
+  .preview-btns { grid-template-columns: 1fr; }
+  .preview-btns .btn { padding: 11px 8px; }
+
+  .modal { max-height: 86vh; border-radius: 16px; }
+  .modal-head { padding: 14px 16px; }
+  .modal-body { padding: 14px 16px 16px; }
 
   .toast { bottom: 72px; font-size: 13.5px; padding: 10px 16px; }
 

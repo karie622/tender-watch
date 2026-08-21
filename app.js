@@ -74,6 +74,7 @@ function loadDateToForm(date) {
   renderChipGroup("dietItems", DIET_ITEMS, dietState);
   renderChipGroup("healthHabits", HEALTH_HABITS, healthHabitsState);
   renderChart();
+  renderInspToday();
   renderDiaryHistory();
   renderCalendar();
 }
@@ -111,7 +112,7 @@ function saveCurrent() {
   else delete records[currentDate];
   saveRecords(records);
   toast(hasContent ? `已保存 ${currentDate} 的记录` : `已清空 ${currentDate}（内容为空）`);
-  renderChart(); renderDiaryHistory(); renderCalendar();
+  renderChart(); renderInspToday(); renderDiaryHistory(); renderCalendar();
   if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
 }
 
@@ -191,10 +192,19 @@ function renderInspList() {
 }
 
 /* ---------- 灵感历史（跨天） ---------- */
+function renderInspToday() {
+  const box = $("inspToday");
+  const rec = records[currentDate] || {};
+  const saved = getInspirations(rec);
+  if (saved.length === 0) { box.innerHTML = ""; return; }
+  box.innerHTML = `<h4 class="insp-today-title">今日已保存 ${saved.length} 条</h4>` +
+    saved.map((t, i) => `<div class="insp-today-item"><span class="idx">${i + 1}</span><span class="txt">${escapeHtml(t)}</span></div>`).join("");
+}
+
 function renderDiaryHistory() {
   const box = $("diaryHistory");
-  const items = Object.keys(records).filter((d) => getInspirations(records[d]).length).sort().reverse().slice(0, 12);
-  if (items.length === 0) { box.innerHTML = `<p class="chart-empty" style="padding:14px 0">还没有灵感记录，写下今天冒出的念头吧。</p>`; return; }
+  const items = Object.keys(records).filter((d) => d !== currentDate && getInspirations(records[d]).length).sort().reverse().slice(0, 12);
+  if (items.length === 0) { box.innerHTML = `<p class="chart-empty" style="padding:14px 0">还没有历史灵感记录，写下今天冒出的念头吧。</p>`; return; }
   box.innerHTML = "";
   items.forEach((d) => {
     const r = records[d];
@@ -276,6 +286,35 @@ function generateReport() {
     <div class="report-summary">${summary}</div>`;
 }
 
+/* ---------- 历史预览弹窗 ---------- */
+function renderPreview(type) {
+  const titles = { dream: "历史梦境记录", emotion: "历史情绪记录", inspiration: "历史今日灵感" };
+  $("previewTitle").textContent = titles[type] || "历史预览";
+  const body = $("previewBody");
+  const dates = Object.keys(records).sort().reverse();
+  let html = "";
+  dates.forEach((d) => {
+    const r = records[d];
+    if (type === "dream") {
+      const note = r.dream?.note;
+      if (!note) return;
+      html += `<div class="preview-item"><div class="preview-date">${d}</div><div class="preview-content">${escapeHtml(note)}</div></div>`;
+    } else if (type === "emotion") {
+      const e = r.emotion;
+      if (!e || (!e.text && e.score == null && !e.categories?.length)) return;
+      const meta = [e.score != null ? `评分 ${e.score}` : "", ...(e.categories || []), ...(e.solutions || [])].filter(Boolean).join(" · ");
+      html += `<div class="preview-item"><div class="preview-date">${d}${meta ? `<span class="preview-meta">${meta}</span>` : ""}</div>${e.text ? `<div class="preview-content">${escapeHtml(e.text)}</div>` : ""}</div>`;
+    } else if (type === "inspiration") {
+      const ins = getInspirations(r);
+      if (!ins.length) return;
+      html += `<div class="preview-item"><div class="preview-date">${d}</div>` + ins.map((t) => `<div class="preview-content">${escapeHtml(t)}</div>`).join("") + `</div>`;
+    }
+  });
+  body.innerHTML = html || `<p class="preview-empty">还没有${(titles[type] || "").replace("历史", "")}。</p>`;
+}
+function openPreview(type) { renderPreview(type); $("previewModal").hidden = false; }
+function closePreview() { $("previewModal").hidden = true; }
+
 /* ---------- 绑定 ---------- */
 function bindRange(id, outId) { const el = $(id), out = $(outId); el.addEventListener("input", () => (out.textContent = el.value)); }
 function init() {
@@ -291,6 +330,9 @@ function init() {
   $("importBtn").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", (e) => { if (e.target.files[0]) importData(e.target.files[0]); e.target.value = ""; });
   $("addInspBtn").addEventListener("click", () => { const last = inspirationState[inspirationState.length - 1]; if (last === "" || last === undefined) { const ta = $("inspList").querySelector(".insp-text"); if (ta) ta.focus(); return; } inspirationState.push(""); renderInspList(); const tas = $("inspList").querySelectorAll(".insp-text"); tas[tas.length - 1].focus(); });
+  document.querySelectorAll("[data-preview]").forEach((btn) => btn.addEventListener("click", () => openPreview(btn.dataset.preview)));
+  $("previewClose").addEventListener("click", closePreview);
+  $("previewModal").addEventListener("click", (e) => { if (e.target === $("previewModal")) closePreview(); });
   setupSyncUI();
   if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
   $("trendTabs").querySelectorAll(".tab").forEach((t) => {
