@@ -213,6 +213,7 @@ function renderInspRecent() {
       del.addEventListener("click", () => deleteInspiration(d, idx));
       item.appendChild(txt);
       item.appendChild(del);
+      enableLongPress(item);
       day.appendChild(item);
     });
     box.appendChild(day);
@@ -239,6 +240,22 @@ function deleteInspiration(date, idx) {
   renderCalendar();
   if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
   toast("已删除该灵感");
+}
+
+/* ---------- 长按显示删除按钮（移动端/桌面通用） ---------- */
+function enableLongPress(item) {
+  let timer = null, revealed = false;
+  const start = (e) => {
+    if (e.button !== undefined && e.button !== 0) return; // 仅左键/触摸
+    timer = setTimeout(() => { revealed = true; item.classList.add("reveal"); }, 500);
+  };
+  const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  item.addEventListener("pointerdown", start);
+  item.addEventListener("pointerup", cancel);
+  item.addEventListener("pointerleave", cancel);
+  item.addEventListener("pointercancel", cancel);
+  item.addEventListener("click", () => { if (revealed) { revealed = false; item.classList.remove("reveal"); } });
+  item.addEventListener("contextmenu", (e) => e.preventDefault());
 }
 
 /* ---------- 日历 ---------- */
@@ -340,6 +357,7 @@ function renderPreview(type) {
   body.querySelectorAll(".insp-del-preview").forEach((b) => {
     b.addEventListener("click", () => { deleteInspiration(b.dataset.date, +b.dataset.idx); renderPreview("inspiration"); });
   });
+  body.querySelectorAll(".preview-line").forEach((line) => enableLongPress(line));
 }
 function openPreview(type) { renderPreview(type); $("previewModal").hidden = false; }
 function closePreview() { $("previewModal").hidden = true; }
