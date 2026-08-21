@@ -416,25 +416,42 @@ function mergeRecords(local, remote) {
   return out;
 }
 // 多设备场景：用同一 token 去账号下找已存在的同步 Gist，避免第二台设备新建空 Gist 导致数据割裂
+// GitHub /gists 列表不返回文件内容，必须逐个 fetch gist 详情才能读到 content
 async function findSyncGist() {
   try {
-    const res = await ghFetch("https://api.github.com/gists?per_page=100");
-    if (!res.ok) return "";
-    const list = await res.json();
+    const listRes = await ghFetch("https://api.github.com/gists?per_page=100");
+    if (!listRes.ok) return "";
+    const list = await listRes.json();
     if (!Array.isArray(list)) return "";
-    let best = "", bestCount = -1;
+    let best = "", bestCount = -1, bestTime = "";
     for (const g of list) {
-      const f = g.files && g.files[GIST_FN];
-      if (!f) continue;
-      let count = 0;
-      try { const p = JSON.parse(f.content); count = p && p.records ? Object.keys(p.records).length : 0; } catch (e) {}
-      if (count > bestCount) { bestCount = count; best = g.id; }
+      if (!g.files || !g.files[GIST_FN]) continue;
+      const detailRes = await ghFetch(g.url);
+      if (!detailRes.ok) continue;
+      const detail = await detailRes.json();
+      const file = detail.files && detail.files[GIST_FN];
+      if (!file || !file.content) continue;
+      let count = 0, synced = "";
+      try {
+        const p = JSON.parse(file.content);
+        count = p && p.records ? Object.keys(p.records).length : 0;
+        synced = (p && p.syncedAt) || detail.updated_at || "";
+      } catch (e) {}
+      const isBetter = count > bestCount || (count === bestCount && synced > bestTime);
+      if (isBetter) { best = g.id; bestCount = count; bestTime = synced; }
     }
     return best;
   } catch (e) { return ""; }
 }
-// 始终认领「记录数最多」的那个同步 Gist（同 token 同账号下只应有一个真实同步源）
+// 已有 Gist 且里面有数据就信任它；只有空/无效时才去认领记录数最多的那个，避免电脑困在空 Gist 上
 async function ensureGistId() {
+  const current = getGistId();
+  if (current) {
+    try {
+      const data = await pullFromGist();
+      if (data && Object.keys(data).length) return; // 当前 Gist 有数据，保持不动
+    } catch (e) {}
+  }
   const found = await findSyncGist();
   if (found) setGistId(found);
 }
