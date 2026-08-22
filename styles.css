@@ -334,7 +334,8 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .insp-day-item.reveal .insp-del { display: inline-flex; }
 .insp-del:hover { background: #fef2f2; border-color: #fca5a5; }
 
-/* 历史预览弹窗中的灵感逐条删除（长按显示） */
+/* 历史预览弹窗中的灵感：顶部添加 + 逐条删除（长按显示） */
+.preview-add-row { margin-top: 6px; margin-bottom: 20px; }
 .preview-line { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; user-select: none; -webkit-user-select: none; }
 .preview-line .preview-content { flex: 1; min-width: 0; }
 .preview-line.reveal { background: rgba(254, 242, 242, 0.85); border-radius: 8px; padding: 2px 4px; }

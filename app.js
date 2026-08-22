@@ -166,9 +166,9 @@ function getInspirations(rec) {
   return [];
 }
 
-/* ---------- 今日灵感：单输入框即时保存 ---------- */
-function addInspiration() {
-  const input = $("inspInput");
+/* ---------- 今日灵感：从指定输入框即时保存 ---------- */
+function addInspiration() { addInspirationFrom($("inspInput")); }
+function addInspirationFrom(input) {
   const v = input.value.trim();
   if (!v) return;
   inspirationState.push(v);
@@ -179,6 +179,7 @@ function addInspiration() {
   records[currentDate] = rec;
   saveRecords(records);
   renderInspRecent();
+  renderCalendar();
   if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
   toast("已保存灵感");
   input.focus();
@@ -334,30 +335,47 @@ function renderPreview(type) {
   const body = $("previewBody");
   const dates = Object.keys(records).sort().reverse();
   let html = "";
+  let listHtml = "";
+  // 今日灵感历史弹窗：顶部可直接添加新灵感
+  if (type === "inspiration") {
+    html += `<div class="insp-add-row preview-add-row">
+      <input type="text" id="previewInspInput" class="insp-input" placeholder="补充一条灵感…" autocomplete="off" />
+      <button id="previewInspSave" class="btn btn-primary insp-save" type="button">✓ 保存</button>
+    </div>`;
+  }
   dates.forEach((d) => {
     const r = records[d];
     if (type === "dream") {
       const note = r.dream?.note;
       if (!note) return;
-      html += `<div class="preview-item"><div class="preview-date">${d}</div><div class="preview-content">${escapeHtml(note)}</div></div>`;
+      listHtml += `<div class="preview-item"><div class="preview-date">${d}</div><div class="preview-content">${escapeHtml(note)}</div></div>`;
     } else if (type === "emotion") {
       const e = r.emotion;
       if (!e || (!e.text && e.score == null && !e.categories?.length)) return;
       const meta = [e.score != null ? `评分 ${e.score}` : "", ...(e.categories || []), ...(e.solutions || [])].filter(Boolean).join(" · ");
-      html += `<div class="preview-item"><div class="preview-date">${d}${meta ? `<span class="preview-meta">${meta}</span>` : ""}</div>${e.text ? `<div class="preview-content">${escapeHtml(e.text)}</div>` : ""}</div>`;
+      listHtml += `<div class="preview-item"><div class="preview-date">${d}${meta ? `<span class="preview-meta">${meta}</span>` : ""}</div>${e.text ? `<div class="preview-content">${escapeHtml(e.text)}</div>` : ""}</div>`;
     } else if (type === "inspiration") {
       const ins = getInspirations(r);
       if (!ins.length) return;
-      html += `<div class="preview-item"><div class="preview-date">${d}</div>` +
+      listHtml += `<div class="preview-item"><div class="preview-date">${d}</div>` +
         ins.map((t, idx) => `<div class="preview-line"><span class="preview-content">${escapeHtml(t)}</span><button type="button" class="insp-del insp-del-preview" data-date="${d}" data-idx="${idx}">删除</button></div>`).join("") +
         `</div>`;
     }
   });
-  body.innerHTML = html || `<p class="preview-empty">还没有${(titles[type] || "").replace("历史", "")}。</p>`;
+  html += listHtml;
+  if (!listHtml) html += `<p class="preview-empty">还没有${(titles[type] || "").replace("历史", "")}。</p>`;
+  body.innerHTML = html;
   body.querySelectorAll(".insp-del-preview").forEach((b) => {
     b.addEventListener("click", () => { deleteInspiration(b.dataset.date, +b.dataset.idx); renderPreview("inspiration"); });
   });
   body.querySelectorAll(".preview-line").forEach((line) => enableLongPress(line));
+  if (type === "inspiration") {
+    const input = $("previewInspInput");
+    const btn = $("previewInspSave");
+    const doAdd = () => { addInspirationFrom(input); renderPreview("inspiration"); };
+    btn.addEventListener("click", doAdd);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doAdd(); } });
+  }
 }
 function openPreview(type) { renderPreview(type); $("previewModal").hidden = false; }
 function closePreview() { $("previewModal").hidden = true; }
