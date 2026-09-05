@@ -400,6 +400,7 @@ function init() {
   $("previewClose").addEventListener("click", closePreview);
   $("previewModal").addEventListener("click", (e) => { if (e.target === $("previewModal")) closePreview(); });
   setupSyncUI();
+  setupAIUI();
   if (localStorage.getItem("pbm_auto_sync") === "1" && getGistToken()) syncNow(true);
   $("trendTabs").querySelectorAll(".tab").forEach((t) => {
     t.addEventListener("click", () => {
@@ -408,6 +409,151 @@ function init() {
     });
   });
   loadDateToForm(currentDate);
+}
+
+/* ---------- AI 洞察 ---------- */
+function getAiKey() { return localStorage.getItem(AI_KEY) || ""; }
+function setAiKey(k) { k ? localStorage.setItem(AI_KEY, k) : localStorage.removeItem(AI_KEY); }
+
+function aiStatus(msg, kind) {
+  const el = $("aiStatus");
+  el.textContent = msg;
+  el.className = "ai-status" + (kind ? " " + kind : "");
+}
+
+function collectText(scope) {
+  const parts = [];
+  if (scope === "dream") {
+    const v = $("dreamNote").value.trim();
+    if (v) parts.push(`【梦境记录】\n${v}`);
+  } else if (scope === "emotion") {
+    const v = $("emotionText").value.trim();
+    if (v) parts.push(`【情绪记录】\n${v}`);
+  } else if (scope === "inspiration") {
+    const ins = getInspirations(records[currentDate] || {});
+    if (ins.length) parts.push(`【今日灵感】\n${ins.join("\n")}`);
+  } else {
+    const dates = Object.keys(records).sort().reverse();
+    let filtered = [];
+    if (scope === "today") filtered = [currentDate];
+    else if (scope === "week") {
+      const base = new Date(currentDate);
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(base); d.setDate(d.getDate() - i);
+        filtered.push(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`);
+      }
+    } else { filtered = dates; }
+    filtered.forEach((d) => {
+      const r = records[d];
+      if (!r) return;
+      const dayParts = [];
+      if (r.dream?.note?.trim()) dayParts.push(`【梦境】${r.dream.note.trim()}`);
+      if (r.emotion?.text?.trim()) {
+        const meta = [r.emotion.score != null ? `评分 ${r.emotion.score}` : "", ...(r.emotion.categories || []), ...(r.emotion.solutions || [])].filter(Boolean).join(" · ");
+        dayParts.push(`【情绪${meta ? " · " + meta : ""}】${r.emotion.text.trim()}`);
+      }
+      const ins = getInspirations(r);
+      if (ins.length) dayParts.push(`【灵感】${ins.join("；")}`);
+      if (dayParts.length) parts.push(`--- ${d} ---\n${dayParts.join("\n")}`);
+    });
+  }
+  return parts.join("\n\n");
+}
+
+function mdToHtml(s) {
+  const lines = s.split("\n");
+  const out = [];
+  let inList = false;
+  lines.forEach((line) => {
+    const clean = escapeHtml(line).replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*(.*?)\*/g, "<em>$1</em>");
+    if (/^[-*•]\s+/.test(line)) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push("<li>" + clean.replace(/^[-*•]\s+/, "") + "</li>");
+    } else {
+      if (inList) { out.push("</ul>"); inList = false; }
+      if (clean.trim()) out.push("<p>" + clean + "</p>");
+    }
+  });
+  if (inList) out.push("</ul>");
+  return out.join("");
+}
+
+async function callDeepSeek(prompt, text) {
+  const key = getAiKey();
+  if (!key) throw new Error("请先保存 DeepSeek API Key");
+  const res = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: [
+        { role: "system", content: AI_SYSTEM + "\n" + prompt },
+        { role: "user", content: text || "（无文字记录）" }
+      ],
+      stream: false
+    })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error?.message || `请求失败(${res.status})`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "（AI 没有返回内容）";
+}
+
+function scopeLabel(scope) {
+  const map = { today: "今日", week: "近七天", all: "全部记录", dream: "当前梦境", emotion: "当前情绪", inspiration: "今日灵感" };
+  return map[scope] || scope;
+}
+
+async function analyzeWithAI(type, scope) {
+  if (aiAnalyzing) return;
+  const cfg = AI_TYPES[type];
+  if (!cfg) return;
+  const text = collectText(scope);
+  if (!text.trim()) { aiStatus("没有可分析的文字记录，先写一点吧", "err"); return; }
+  aiAnalyzing = true;
+  aiStatus("AI 正在阅读你的记录…");
+  document.querySelectorAll(".ai-type-btn, .ai-field-btn, #inspAiBtn").forEach((b) => b.disabled = true);
+  try {
+    const answer = await callDeepSeek(AI_PROMPTS[type], text);
+    $("aiTitle").textContent = cfg.title;
+    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">分析范围：${scopeLabel(scope)} · 共 ${text.trim().length} 字</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
+    $("aiModal").hidden = false;
+    aiStatus(cfg.desc + "完成", "ok");
+  } catch (e) {
+    aiStatus("分析失败：" + e.message, "err");
+  } finally {
+    aiAnalyzing = false;
+    document.querySelectorAll(".ai-type-btn, .ai-field-btn, #inspAiBtn").forEach((b) => b.disabled = false);
+  }
+}
+
+function closeAiModal() { $("aiModal").hidden = true; }
+
+function setupAIUI() {
+  const key = getAiKey();
+  if (key) $("aiKey").value = "已保存（" + key.slice(0, 4) + "…" + key.slice(-4) + "）";
+  $("saveAiKeyBtn").addEventListener("click", () => {
+    const v = $("aiKey").value.trim();
+    if (!v) { setAiKey(""); $("aiKey").value = ""; aiStatus("已清除 API Key", "err"); return; }
+    if (v.startsWith("已保存（")) { aiStatus("API Key 已保存", "ok"); return; }
+    setAiKey(v);
+    $("aiKey").value = "已保存（" + v.slice(0, 4) + "…" + v.slice(-4) + "）";
+    aiStatus("API Key 已保存（仅存本机浏览器）", "ok");
+  });
+  document.querySelectorAll(".ai-type-btn").forEach((b) => {
+    b.addEventListener("click", () => {
+      const scope = document.querySelector('input[name="aiScope"]:checked')?.value || "today";
+      analyzeWithAI(b.dataset.type, scope);
+    });
+  });
+  document.querySelectorAll(".ai-field-btn").forEach((b) => {
+    b.addEventListener("click", () => analyzeWithAI("insight", b.dataset.field));
+  });
+  $("inspAiBtn").addEventListener("click", () => analyzeWithAI("insight", "inspiration"));
+  $("aiClose").addEventListener("click", closeAiModal);
+  $("aiModal").addEventListener("click", (e) => { if (e.target === $("aiModal")) closeAiModal(); });
 }
 
 /* ---------- 数据备份：导出 / 导入 ---------- */
@@ -452,6 +598,23 @@ const GIST_TOKEN_KEY = "pbm_gist_token";
 const GIST_ID_KEY = "pbm_gist_id";
 const GIST_FN = "tender-watch-data.json";
 let syncing = false;
+
+/* ---------- AI 洞察 ---------- */
+const AI_KEY = "pbm_ai_key";
+const AI_TYPES = {
+  insight: { title: "默认洞察", desc: "挖掘思维模式与深层动机" },
+  values: { title: "价值澄清", desc: "找出你真正看重的东西" },
+  inverse: { title: "逆向思考", desc: "用芒格逆向思维考察" },
+  second: { title: "二阶思考", desc: "识别二阶问题与系统性关联" }
+};
+const AI_PROMPTS = {
+  insight: "你是一位擅长心理觉察的教练。请温柔地阅读以下记录，挖掘背后隐藏的思维模式、深层动机、情感需求和未被言明的渴望。用中文回答，分点列出，语气像一位温柔的朋友。",
+  values: "你是一位价值观梳理教练。请从以下记录里找出这个人真正看重的东西、珍视的品质、坚守的原则，以及可能被忽略的内在需求。用中文回答，分点列出。",
+  inverse: "你擅长查理·芒格的逆向思维。请用「如果我想让情况变得更糟，我会怎么做」的反向视角来考察以下记录，找出需要避免的行为、思维和模式。用中文回答，分点列出。",
+  second: "你擅长二阶思考。请识别以下记录中显性问题背后更深层的系统性问题，并提炼出真正值得解决的高杠杆问题。用中文回答，分点列出。"
+};
+const AI_SYSTEM = "你是『温柔的守望』工作台的 AI 洞察助手，擅长心理学、哲学和系统思考。请用温柔、洞察力强、简洁的中文回答，避免说教。";
+let aiAnalyzing = false;
 
 function getGistToken() { return localStorage.getItem(GIST_TOKEN_KEY) || ""; }
 function setGistToken(t) { t ? localStorage.setItem(GIST_TOKEN_KEY, t) : localStorage.removeItem(GIST_TOKEN_KEY); }
