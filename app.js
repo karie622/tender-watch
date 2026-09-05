@@ -506,6 +506,8 @@ function scopeLabel(scope) {
   return map[scope] || scope;
 }
 
+const AI_BUSY_SEL = ".ai-type-btn, .ai-field-btn, #inspAiBtn, #aiAskBtn, #aiTxtBtn";
+
 async function analyzeWithAI(type, scope) {
   if (aiAnalyzing) return;
   const cfg = AI_TYPES[type];
@@ -514,7 +516,7 @@ async function analyzeWithAI(type, scope) {
   if (!text.trim()) { aiStatus("没有可分析的文字记录，先写一点吧", "err"); return; }
   aiAnalyzing = true;
   aiStatus("AI 正在阅读你的记录…");
-  document.querySelectorAll(".ai-type-btn, .ai-field-btn, #inspAiBtn").forEach((b) => b.disabled = true);
+  document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = true);
   try {
     const answer = await callDeepSeek(AI_PROMPTS[type], text);
     $("aiTitle").textContent = cfg.title;
@@ -525,7 +527,57 @@ async function analyzeWithAI(type, scope) {
     aiStatus("分析失败：" + e.message, "err");
   } finally {
     aiAnalyzing = false;
-    document.querySelectorAll(".ai-type-btn, .ai-field-btn, #inspAiBtn").forEach((b) => b.disabled = false);
+    document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = false);
+  }
+}
+
+/* AI 提问：基于记录回答自由问题 */
+async function askAI() {
+  if (aiAnalyzing) return;
+  const q = $("aiAskInput").value.trim();
+  if (!q) { aiStatus("先输入你的问题再发送", "err"); return; }
+  const scope = document.querySelector('input[name="aiScope"]:checked')?.value || "today";
+  const text = collectText(scope);
+  if (!text.trim()) { aiStatus("没有可分析的文字记录，先写一点吧", "err"); return; }
+  aiAnalyzing = true;
+  aiStatus("AI 正在结合记录思考你的问题…");
+  document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = true);
+  try {
+    const prompt = "用户会给你一段 TA 的观察记录和一个问题。请结合记录回答问题；如果记录信息不足以回答，请诚实说明，并基于已有内容给出温柔的观察与建议。用中文回答，分点列出。";
+    const material = "【观察记录】\n" + text + "\n\n【我的问题】\n" + q;
+    const answer = await callDeepSeek(prompt, material);
+    $("aiTitle").textContent = "记录问答";
+    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">基于${scopeLabel(scope)}记录 · 问题：${escapeHtml(q)}</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
+    $("aiModal").hidden = false;
+    aiStatus("回答完成", "ok");
+  } catch (e) {
+    aiStatus("提问失败：" + e.message, "err");
+  } finally {
+    aiAnalyzing = false;
+    document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = false);
+  }
+}
+
+/* 导入 TXT 分析 */
+async function analyzeTxtFile(file) {
+  if (aiAnalyzing || !file) return;
+  aiAnalyzing = true;
+  aiStatus("正在读取并分析 " + file.name + " …");
+  document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = true);
+  try {
+    const text = await file.text();
+    if (!text.trim()) throw new Error("文件内容为空");
+    const prompt = "请深度阅读分析用户提供的这份文字材料：提炼核心主题与关键信息，挖掘其中的情绪与思维模式，指出值得注意的亮点与问题，并给出 2-3 条具体可行的建议。用中文回答，分点列出。";
+    const answer = await callDeepSeek(prompt, text);
+    $("aiTitle").textContent = "TXT 分析";
+    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">文件：${escapeHtml(file.name)} · 共 ${text.trim().length} 字</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
+    $("aiModal").hidden = false;
+    aiStatus("TXT 分析完成", "ok");
+  } catch (e) {
+    aiStatus("TXT 分析失败：" + e.message, "err");
+  } finally {
+    aiAnalyzing = false;
+    document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = false);
   }
 }
 
@@ -552,6 +604,16 @@ function setupAIUI() {
     b.addEventListener("click", () => analyzeWithAI("insight", b.dataset.field));
   });
   $("inspAiBtn").addEventListener("click", () => analyzeWithAI("insight", "inspiration"));
+  $("aiAskBtn").addEventListener("click", askAI);
+  $("aiAskInput").addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); askAI(); }
+  });
+  $("aiTxtBtn").addEventListener("click", () => $("aiTxtFile").click());
+  $("aiTxtFile").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) analyzeTxtFile(f);
+    e.target.value = "";
+  });
   $("aiClose").addEventListener("click", closeAiModal);
   $("aiModal").addEventListener("click", (e) => { if (e.target === $("aiModal")) closeAiModal(); });
 }

@@ -6,7 +6,7 @@
   <title>温柔的守望</title>
   <link rel="preconnect" href="https://fonts.font.im" crossorigin />
   <link rel="stylesheet" href="https://fonts.font.im/css2?family=Ma+Shan+Zheng&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
   <header class="topbar">
@@ -206,6 +206,14 @@
           <button class="btn btn-ghost ai-type-btn" data-type="second" title="识别二阶问题与系统性关联">二阶思考</button>
           <button class="btn btn-ghost ai-type-btn" data-type="cbt" title="认知行为疗法：拆解自动化思维与认知扭曲">CBT 疗法</button>
         </div>
+        <div class="ai-ask-row">
+          <textarea id="aiAskInput" class="ai-ask" rows="2" placeholder="基于你的记录提问，比如：这周我的情绪有什么规律？（Ctrl+Enter 发送）"></textarea>
+          <button id="aiAskBtn" class="btn btn-primary" type="button">🔍 基于记录提问</button>
+        </div>
+        <div class="ai-import-row">
+          <input type="file" id="aiTxtFile" accept=".txt,.md,.log,text/plain" hidden />
+          <button id="aiTxtBtn" class="btn btn-ghost" type="button">📄 导入 TXT 分析</button>
+        </div>
         <p class="ai-status" id="aiStatus"></p>
       </section>
 
@@ -260,6 +268,6 @@
 
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

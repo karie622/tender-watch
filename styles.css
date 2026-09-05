@@ -332,6 +332,16 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .ai-status.ok { color: #16a34a; }
 .ai-status.err { color: #dc2626; }
 
+/* AI 提问与 TXT 导入 */
+.ai-ask-row { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 10px; }
+.ai-ask {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 58px;
+  font: inherit; font-size: 13.5px; line-height: 1.6; padding: 9px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+}
+.ai-ask:focus { outline: none; border-color: var(--primary); }
+.ai-import-row { display: flex; margin-bottom: 4px; }
+
 /* 文字记录卡片内的 AI 分析按钮 */
 .ai-inline { display: flex; justify-content: flex-end; margin-top: 8px; }
 .ai-field-btn { font-size: 12.5px; padding: 6px 12px; }
