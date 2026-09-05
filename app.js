@@ -508,21 +508,84 @@ function scopeLabel(scope) {
 
 const AI_BUSY_SEL = ".ai-type-btn, .ai-field-btn, #inspAiBtn, #aiAskBtn, #aiTxtBtn";
 
-async function analyzeWithAI(type, scope) {
+/* ---------- AI：导入 TXT 持久化 + 分析历史 ---------- */
+function getImportedTxt() {
+  try { return JSON.parse(localStorage.getItem(AI_TXT_KEY) || "null"); } catch { return null; }
+}
+function setImportedTxt(obj) {
+  obj ? localStorage.setItem(AI_TXT_KEY, JSON.stringify(obj)) : localStorage.removeItem(AI_TXT_KEY);
+  renderAiImportBar();
+}
+function loadAiHist() {
+  try { return JSON.parse(localStorage.getItem(AI_HIST_KEY) || "[]"); } catch { return []; }
+}
+function saveAiHistEntry(title, meta, answer) {
+  const hist = loadAiHist();
+  hist.unshift({ id: Date.now(), at: Date.now(), title, meta, answer });
+  localStorage.setItem(AI_HIST_KEY, JSON.stringify(hist.slice(0, 50)));
+}
+function materialForAI() {
+  const t = getImportedTxt();
+  if (t && t.text && t.text.trim()) return { text: t.text, label: "TXT「" + t.name + "」" };
+  const scope = document.querySelector('input[name="aiScope"]:checked')?.value || "today";
+  return { text: collectText(scope), label: scopeLabel(scope) + "记录" };
+}
+function renderAiImportBar() {
+  const bar = $("aiImportBar");
+  if (!bar) return;
+  const t = getImportedTxt();
+  const ask = $("aiAskInput");
+  if (!t) {
+    bar.hidden = true; bar.innerHTML = "";
+    if (ask) ask.placeholder = "基于记录或导入的 TXT 提问，比如：这周我的情绪有什么规律？（Ctrl+Enter 发送）";
+    return;
+  }
+  bar.hidden = false;
+  bar.innerHTML = `<span class="ai-import-name">📄 ${escapeHtml(t.name)} · ${(t.text || "").length} 字 · 当前分析与提问均基于此文件</span><button type="button" id="aiTxtClear" class="ai-import-clear">清除</button>`;
+  if (ask) ask.placeholder = "基于导入的 TXT 提问（Ctrl+Enter 发送）";
+  $("aiTxtClear").addEventListener("click", () => { setImportedTxt(null); aiStatus("已清除导入的 TXT", "ok"); });
+}
+function openAiHist() { $("aiHistModal").hidden = false; renderAiHist(); }
+function renderAiHist() {
+  const body = $("aiHistList");
+  const hist = loadAiHist();
+  if (!hist.length) { body.innerHTML = `<p class="preview-empty">还没有保存的分析记录。</p>`; return; }
+  body.innerHTML = hist.map((h) => {
+    const when = new Date(h.at).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    return `<div class="ai-hist-item"><div class="ai-hist-head"><span class="ai-hist-title">${escapeHtml(h.title)}</span><span class="ai-hist-when">${when}</span><button type="button" class="ai-hist-del" data-id="${h.id}">删除</button></div>${h.meta ? `<div class="ai-hist-meta">${escapeHtml(h.meta)}</div>` : ""}<div class="ai-hist-body">${mdToHtml(h.answer || "")}</div></div>`;
+  }).join("");
+  body.querySelectorAll(".ai-hist-del").forEach((b) => {
+    b.addEventListener("click", () => {
+      localStorage.setItem(AI_HIST_KEY, JSON.stringify(loadAiHist().filter((x) => String(x.id) !== b.dataset.id)));
+      renderAiHist();
+    });
+  });
+}
+function clearAiHist() {
+  if (!loadAiHist().length) return;
+  if (!confirm("确定清空全部 AI 分析历史？此操作不可恢复。")) return;
+  localStorage.removeItem(AI_HIST_KEY);
+  renderAiHist();
+}
+
+async function analyzeWithAI(type, scope, material) {
   if (aiAnalyzing) return;
   const cfg = AI_TYPES[type];
   if (!cfg) return;
-  const text = collectText(scope);
-  if (!text.trim()) { aiStatus("没有可分析的文字记录，先写一点吧", "err"); return; }
+  const mat = material || { text: collectText(scope), label: scopeLabel(scope) + "记录" };
+  const text = mat.text;
+  if (!text.trim()) { aiStatus("没有可分析的内容，先写一点或导入 TXT", "err"); return; }
   aiAnalyzing = true;
   aiStatus("AI 正在阅读你的记录…");
   document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = true);
   try {
     const answer = await callDeepSeek(AI_PROMPTS[type], text);
+    const meta = `${mat.label} · 共 ${text.trim().length} 字`;
     $("aiTitle").textContent = cfg.title;
-    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">分析范围：${scopeLabel(scope)} · 共 ${text.trim().length} 字</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
+    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">分析来源：${meta}</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
     $("aiModal").hidden = false;
-    aiStatus(cfg.desc + "完成", "ok");
+    saveAiHistEntry(cfg.title, meta, answer);
+    aiStatus(cfg.desc + "完成，已存入分析历史", "ok");
   } catch (e) {
     aiStatus("分析失败：" + e.message, "err");
   } finally {
@@ -531,25 +594,27 @@ async function analyzeWithAI(type, scope) {
   }
 }
 
-/* AI 提问：基于记录回答自由问题 */
+/* AI 提问：基于记录或导入的 TXT 回答自由问题 */
 async function askAI() {
   if (aiAnalyzing) return;
   const q = $("aiAskInput").value.trim();
   if (!q) { aiStatus("先输入你的问题再发送", "err"); return; }
-  const scope = document.querySelector('input[name="aiScope"]:checked')?.value || "today";
-  const text = collectText(scope);
-  if (!text.trim()) { aiStatus("没有可分析的文字记录，先写一点吧", "err"); return; }
+  const mat = materialForAI();
+  if (!mat.text.trim()) { aiStatus("没有可分析的内容，先写一点或导入 TXT", "err"); return; }
   aiAnalyzing = true;
-  aiStatus("AI 正在结合记录思考你的问题…");
+  aiStatus("AI 正在结合材料思考你的问题…");
   document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = true);
   try {
-    const prompt = "用户会给你一段 TA 的观察记录和一个问题。请结合记录回答问题；如果记录信息不足以回答，请诚实说明，并基于已有内容给出温柔的观察与建议。用中文回答，分点列出。";
-    const material = "【观察记录】\n" + text + "\n\n【我的问题】\n" + q;
-    const answer = await callDeepSeek(prompt, material);
-    $("aiTitle").textContent = "记录问答";
-    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">基于${scopeLabel(scope)}记录 · 问题：${escapeHtml(q)}</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
+    const prompt = "用户会给你一段材料和一个问题。请结合材料回答问题；如果材料信息不足以回答，请诚实说明，并基于已有内容给出温柔的观察与建议。用中文回答，分点列出。";
+    const content = "【材料】\n" + mat.text + "\n\n【我的问题】\n" + q;
+    const answer = await callDeepSeek(prompt, content);
+    const meta = `${mat.label} · 问题：${q}`;
+    $("aiTitle").textContent = "AI 问答";
+    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">${escapeHtml(meta)}</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
     $("aiModal").hidden = false;
-    aiStatus("回答完成", "ok");
+    saveAiHistEntry("问答：" + (q.length > 20 ? q.slice(0, 20) + "…" : q), meta, answer);
+    $("aiAskInput").value = "";
+    aiStatus("回答完成，已存入分析历史", "ok");
   } catch (e) {
     aiStatus("提问失败：" + e.message, "err");
   } finally {
@@ -558,23 +623,19 @@ async function askAI() {
   }
 }
 
-/* 导入 TXT 分析 */
+/* 导入 TXT 分析：持久化保存，可用五种类型分析与提问 */
 async function analyzeTxtFile(file) {
   if (aiAnalyzing || !file) return;
   aiAnalyzing = true;
-  aiStatus("正在读取并分析 " + file.name + " …");
+  aiStatus("正在读取 " + file.name + " …");
   document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = true);
   try {
     const text = await file.text();
     if (!text.trim()) throw new Error("文件内容为空");
-    const prompt = "请深度阅读分析用户提供的这份文字材料：提炼核心主题与关键信息，挖掘其中的情绪与思维模式，指出值得注意的亮点与问题，并给出 2-3 条具体可行的建议。用中文回答，分点列出。";
-    const answer = await callDeepSeek(prompt, text);
-    $("aiTitle").textContent = "TXT 分析";
-    $("aiBody").innerHTML = `<div class="ai-result"><div class="ai-result-meta">文件：${escapeHtml(file.name)} · 共 ${text.trim().length} 字</div><div class="ai-result-body">${mdToHtml(answer)}</div></div>`;
-    $("aiModal").hidden = false;
-    aiStatus("TXT 分析完成", "ok");
+    setImportedTxt({ name: file.name, text, at: Date.now() });
+    aiStatus(`已导入 ${file.name}（${text.trim().length} 字），点上方分析按钮或直接提问即可`, "ok");
   } catch (e) {
-    aiStatus("TXT 分析失败：" + e.message, "err");
+    aiStatus("导入失败：" + e.message, "err");
   } finally {
     aiAnalyzing = false;
     document.querySelectorAll(AI_BUSY_SEL).forEach((b) => b.disabled = false);
@@ -595,10 +656,7 @@ function setupAIUI() {
     aiStatus("API Key 已保存（仅存本机浏览器）", "ok");
   });
   document.querySelectorAll(".ai-type-btn").forEach((b) => {
-    b.addEventListener("click", () => {
-      const scope = document.querySelector('input[name="aiScope"]:checked')?.value || "today";
-      analyzeWithAI(b.dataset.type, scope);
-    });
+    b.addEventListener("click", () => analyzeWithAI(b.dataset.type, null, materialForAI()));
   });
   document.querySelectorAll(".ai-field-btn").forEach((b) => {
     b.addEventListener("click", () => analyzeWithAI("insight", b.dataset.field));
@@ -614,6 +672,11 @@ function setupAIUI() {
     if (f) analyzeTxtFile(f);
     e.target.value = "";
   });
+  $("aiHistBtn").addEventListener("click", openAiHist);
+  $("aiHistClose").addEventListener("click", () => { $("aiHistModal").hidden = true; });
+  $("aiHistClear").addEventListener("click", clearAiHist);
+  $("aiHistModal").addEventListener("click", (e) => { if (e.target === $("aiHistModal")) $("aiHistModal").hidden = true; });
+  renderAiImportBar();
   $("aiClose").addEventListener("click", closeAiModal);
   $("aiModal").addEventListener("click", (e) => { if (e.target === $("aiModal")) closeAiModal(); });
 }
@@ -663,6 +726,8 @@ let syncing = false;
 
 /* ---------- AI 洞察 ---------- */
 const AI_KEY = "pbm_ai_key";
+const AI_TXT_KEY = "pbm_ai_txt";
+const AI_HIST_KEY = "pbm_ai_hist";
 const AI_TYPES = {
   insight: { title: "默认洞察", desc: "挖掘思维模式与深层动机" },
   values: { title: "价值澄清", desc: "找出你真正看重的东西" },

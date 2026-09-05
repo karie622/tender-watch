@@ -340,7 +340,37 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
   border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
 }
 .ai-ask:focus { outline: none; border-color: var(--primary); }
-.ai-import-row { display: flex; margin-bottom: 4px; }
+.ai-import-row { display: flex; gap: 8px; margin-bottom: 4px; }
+
+/* 导入 TXT 状态条 */
+.ai-import-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: rgba(139, 92, 246, 0.08); border: 1px dashed rgba(139, 92, 246, 0.35);
+  border-radius: 10px; padding: 8px 12px; margin: 8px 0 4px;
+}
+.ai-import-name { font-size: 12.5px; color: var(--ink-soft); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-import-clear {
+  flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: #dc2626;
+  font-size: 12px; padding: 4px 10px; border-radius: 8px; cursor: pointer;
+}
+.ai-import-clear:hover { background: #fef2f2; }
+
+/* AI 分析历史弹窗 */
+.ai-hist-top { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.ai-hist-item { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+.ai-hist-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ai-hist-title { font-weight: 700; font-size: 13.5px; color: var(--ink); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-hist-when { font-size: 12px; color: var(--ink-soft); flex: 0 0 auto; }
+.ai-hist-del {
+  flex: 0 0 auto; border: 1px solid var(--line); background: #fff; color: #dc2626;
+  font-size: 12px; padding: 3px 9px; border-radius: 8px; cursor: pointer;
+}
+.ai-hist-del:hover { background: #fef2f2; }
+.ai-hist-meta { font-size: 12px; color: var(--ink-soft); background: var(--primary-soft); padding: 5px 10px; border-radius: 8px; margin-bottom: 6px; }
+.ai-hist-body { font-size: 13.5px; line-height: 1.7; color: var(--ink); }
+.ai-hist-body p { margin: 0 0 8px; }
+.ai-hist-body p:last-child { margin-bottom: 0; }
+.ai-hist-body ul { margin: 6px 0; padding-left: 1.2em; }
 
 /* 文字记录卡片内的 AI 分析按钮 */
 .ai-inline { display: flex; justify-content: flex-end; margin-top: 8px; }

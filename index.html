@@ -6,7 +6,7 @@
   <title>温柔的守望</title>
   <link rel="preconnect" href="https://fonts.font.im" crossorigin />
   <link rel="stylesheet" href="https://fonts.font.im/css2?family=Ma+Shan+Zheng&display=swap" />
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=10" />
 </head>
 <body>
   <header class="topbar">
@@ -207,13 +207,15 @@
           <button class="btn btn-ghost ai-type-btn" data-type="cbt" title="认知行为疗法：拆解自动化思维与认知扭曲">CBT 疗法</button>
         </div>
         <div class="ai-ask-row">
-          <textarea id="aiAskInput" class="ai-ask" rows="2" placeholder="基于你的记录提问，比如：这周我的情绪有什么规律？（Ctrl+Enter 发送）"></textarea>
-          <button id="aiAskBtn" class="btn btn-primary" type="button">🔍 基于记录提问</button>
+          <textarea id="aiAskInput" class="ai-ask" rows="2" placeholder="基于记录或导入的 TXT 提问，比如：这周我的情绪有什么规律？（Ctrl+Enter 发送）"></textarea>
+          <button id="aiAskBtn" class="btn btn-primary" type="button">✨ 发送提问</button>
         </div>
         <div class="ai-import-row">
           <input type="file" id="aiTxtFile" accept=".txt,.md,.log,text/plain" hidden />
-          <button id="aiTxtBtn" class="btn btn-ghost" type="button">📄 导入 TXT 分析</button>
+          <button id="aiTxtBtn" class="btn btn-ghost" type="button">📄 导入 TXT</button>
+          <button id="aiHistBtn" class="btn btn-ghost" type="button">📜 分析历史</button>
         </div>
+        <div id="aiImportBar" class="ai-import-bar" hidden></div>
         <p class="ai-status" id="aiStatus"></p>
       </section>
 
@@ -266,8 +268,21 @@
     </div>
   </div>
 
+  <div id="aiHistModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-head">
+        <h3>AI 分析历史</h3>
+        <button id="aiHistClose" class="modal-close" type="button" aria-label="关闭">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ai-hist-top"><button id="aiHistClear" class="btn btn-ghost ai-field-btn" type="button">🗑 清空全部</button></div>
+        <div id="aiHistList"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" hidden></div>
 
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
