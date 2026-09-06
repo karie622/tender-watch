@@ -15,7 +15,11 @@
 
 * { box-sizing: border-box; }
 
-html, body { min-height: 100%; }
+/* 防止装饰光晕与超长文本把页面撑宽产生横向滚动；
+   clip 不会像 hidden 那样建立滚动容器，sticky 顶栏不受影响 */
+html, body { min-height: 100%; overflow-x: clip; width: 100%; }
+
+img, svg, video { max-width: 100%; }
 body {
   margin: 0;
   font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
@@ -36,8 +40,8 @@ body::before {
 /* Decorative soft orbs */
 body::after {
   content: "";
-  position: fixed; bottom: -12vh; right: -10vw;
-  width: 36vw; height: 36vw;
+  position: fixed; bottom: -12vh; right: -6vw;
+  width: 30vw; height: 30vw;
   background: radial-gradient(circle, rgba(236, 72, 153, 0.12), transparent 65%);
   filter: blur(40px);
   pointer-events: none;
@@ -456,6 +460,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 /* Toast */
 .toast {
   position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
   background: rgba(190, 24, 93, 0.92); color: #fff; padding: 11px 20px; border-radius: 11px;
   font-size: 14px; box-shadow: var(--shadow); z-index: 50;
   backdrop-filter: blur(4px);
@@ -471,6 +476,21 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
   opacity: 0.8;
   font-family: "Ma Shan Zheng", "STXingkai", "Xingkai SC", cursive;
 }
+
+/* 超长不换行文本（AI 结果、链接、粘贴内容）防撑宽 */
+.ai-result-body,
+.preview-content,
+.diary-item .txt,
+.insp-txt,
+.ai-hist-body,
+.vow-text,
+.sync-tip,
+.ai-tip,
+.preview-tip,
+.backup-tip,
+.report-summary,
+.mascot-caption,
+.footer-deco { overflow-wrap: break-word; word-break: break-word; }
 
 /* Mobile optimizations */
 @media (max-width: 720px) {
