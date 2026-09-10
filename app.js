@@ -409,9 +409,11 @@ function init() {
     });
   });
   loadDateToForm(currentDate);
-  syncTopbarH();
-  window.addEventListener("resize", syncTopbarH);
-  window.addEventListener("load", syncTopbarH);
+  syncTopbarH(); resetHScroll();
+  window.addEventListener("resize", () => { syncTopbarH(); resetHScroll(); });
+  window.addEventListener("load", () => { syncTopbarH(); resetHScroll(); });
+  window.addEventListener("orientationchange", resetHScroll);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", resetHScroll);
 }
 
 /* 顶栏是 position:fixed，高度随屏幕宽度变化（手机端竖排更高）。
@@ -420,6 +422,15 @@ function syncTopbarH() {
   const tb = document.querySelector(".topbar");
   if (!tb) return;
   document.documentElement.style.setProperty("--topbar-h", (tb.offsetHeight + 2) + "px");
+}
+
+/* overflow-x:hidden/clip 只是裁剪，但页面仍可能被「程序化滚动」：
+   手机上点输入框/键盘弹出时，浏览器会把焦点元素水平滚进视野，
+   整页就被顶得偏右且无法滑回（表现为"偶尔显示过宽"）。
+   在尺寸变化/旋转/键盘弹出后强制把水平滚动归零兜底 */
+function resetHScroll() {
+  document.documentElement.scrollLeft = 0;
+  document.body.scrollLeft = 0;
 }
 
 /* ---------- AI 洞察 ---------- */

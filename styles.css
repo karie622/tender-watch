@@ -16,8 +16,10 @@
 * { box-sizing: border-box; }
 
 /* 彻底禁止横向滚动：装饰光晕与超长文本都不允许撑宽页面。
-   顶栏改成 fixed，避免 hidden 破坏 sticky */
-html, body { min-height: 100%; overflow-x: hidden; width: 100%; }
+   顶栏改成 fixed，避免 hidden 破坏 sticky。
+   clip 优先：连「点输入框时浏览器把焦点元素水平滚进视野」这类程序化滚动都彻底禁止
+   （hidden 只是看不见，页面仍可被滚动导致整页偏右卡住）；旧浏览器不支持时回退 hidden */
+html, body { min-height: 100%; overflow-x: hidden; overflow-x: clip; width: 100%; }
 
 img, svg, video, canvas { max-width: 100%; height: auto; }
 body {
@@ -106,9 +108,12 @@ body::after {
   gap: 22px; padding: var(--topbar-h, 96px) 28px 44px;
   max-width: 1240px; margin: 0 auto; align-items: start;
 }
-.col-left, .col-right { display: flex; flex-direction: column; gap: 22px; }
+.col-left, .col-right { display: flex; flex-direction: column; gap: 22px; min-width: 0; max-width: 100%; }
 @media (max-width: 920px) {
-  .layout { grid-template-columns: 1fr; }
+  /* 必须用 minmax(0,1fr)：纯 1fr 的最小尺寸是「内容最小宽度」，
+     任何超宽内容（趋势图 SVG、长单词等）都会把整条轨道撑宽，
+     导致所有卡片一起超出屏幕被裁掉 */
+  .layout { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Card */
@@ -119,6 +124,8 @@ body::after {
   padding: 22px 24px;
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
+  min-width: 0;
+  max-width: 100%;
 }
 .card-title { font-size: 16px; margin: 0 0 16px; display: flex; align-items: center; gap: 9px; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -272,7 +279,7 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 10px rgba(236, 72, 153, 0.18); }
 
 /* Chart */
-.chart-wrap { width: 100%; min-height: 260px; }
+.chart-wrap { width: 100%; min-width: 0; max-width: 100%; min-height: 260px; }
 .chart-wrap svg { width: 100%; height: auto; display: block; }
 .chart-empty { text-align: center; color: var(--ink-soft); font-size: 13px; padding: 30px 0; }
 
@@ -497,17 +504,17 @@ textarea:focus, input:focus { outline: none; border-color: var(--primary); backg
 .ai-result-body, .ai-hist-body, .modal-body, .preview-content {
   overflow-wrap: break-word; word-break: break-word;
 }
-.ai-result-body pre, .ai-hist-body pre, .modal-body pre {
+.ai-result-body pre, .ai-hist-body pre, .modal-body pre, .report-body pre {
   white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;
   max-width: 100%; margin: 10px 0; padding: 12px 14px;
   background: rgba(74, 29, 52, 0.05); border-radius: 10px;
   font-size: 13px; line-height: 1.5; overflow-x: auto;
 }
-.ai-result-body code, .ai-hist-body code, .modal-body code {
+.ai-result-body code, .ai-hist-body code, .modal-body code, .report-body code {
   white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;
   max-width: 100%; font-size: 0.92em;
 }
-.ai-result-body table, .ai-hist-body table, .modal-body table {
+.ai-result-body table, .ai-hist-body table, .modal-body table, .report-body table {
   max-width: 100%; display: block; overflow-x: auto; border-collapse: collapse;
 }
 .ai-result-body img, .ai-hist-body img, .modal-body img { max-width: 100%; height: auto; }
